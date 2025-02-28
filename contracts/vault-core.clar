@@ -1,12 +1,15 @@
-;; Vault - A STX storage vault
-;; This is the initial implementation that will be enhanced with quantum-resistant features
+;; QuantumFortress - vault-core.clar
+;; Core vault functionality for quantum-resistant asset storage
 
 ;; Constants
 (define-constant CONTRACT-OWNER tx-sender)
 (define-constant ERR-NOT-AUTHORIZED (err u401))
 (define-constant ERR-VAULT-EXISTS (err u402))
 (define-constant ERR-VAULT-NOT-FOUND (err u403))
-(define-constant ERR-INSUFFICIENT-BALANCE (err u404))
+(define-constant ERR-INVALID-PARAMS (err u404))
+(define-constant ERR-LOCKED (err u405))
+(define-constant ERR-TIME-LOCK (err u406))
+(define-constant ERR-INSUFFICIENT-BALANCE (err u407))
 
 ;; Data Maps
 ;; Map of vaults by owner and vault ID
@@ -16,11 +19,25 @@
     name: (string-ascii 50),
     balance: uint,
     created-at: uint,
-    last-accessed: uint
+    last-accessed: uint,
+    time-lock: uint,
+    recovery-addresses: (list 5 principal),
+    inheritance-active: bool
+  }
+)
+
+;; Map for storing post-quantum encrypted data for each vault
+(define-map vault-encrypted-data
+  { owner: principal, vault-id: uint }
+  { 
+    data-hash: (buff 32),
+    encrypted-metadata: (buff 256),
+    encryption-version: uint
   }
 )
 
 ;; Variables
+(define-data-var encryption-version uint u1)
 (define-data-var total-vaults uint u0)
 
 ;; Private Functions
