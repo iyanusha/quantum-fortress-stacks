@@ -139,3 +139,15 @@
     )
   )
 )
+
+;; Read-only Functions
+
+;; Get vault details
+(define-read-only (get-vault-info (owner principal) (vault-id uint))
+  (map-get? vaults {owner: owner, vault-id: vault-id})
+)
+
+;; Get total number of vaults
+(define-read-only (get-total-vaults)
+  (ok (var-get total-vaults))
+)
