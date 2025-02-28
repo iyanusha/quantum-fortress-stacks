@@ -31,3 +31,35 @@
 (define-private (current-time)
   (default-to u0 (get-block-info? time (- block-height u1)))
 )
+
+;; Public Functions
+
+;; Create a new vault
+(define-public (create-vault (name (string-ascii 50)))
+  (let (
+    (owner tx-sender)
+    (new-vault-id (+ (var-get total-vaults) u1))
+    (now (current-time))
+    (vault-exists (map-get? vaults {owner: owner, vault-id: new-vault-id}))
+  )
+    ;; Check if the vault already exists
+    (asserts! (is-none vault-exists) (err ERR-VAULT-EXISTS))
+
+    ;; Create new vault
+    (map-set vaults
+      {owner: owner, vault-id: new-vault-id}
+      {
+        name: name,
+        balance: u0,
+        created-at: now,
+        last-accessed: now
+      }
+    )
+
+    ;; Increment total vaults counter
+    (var-set total-vaults new-vault-id)
+
+    ;; Return success with new vault ID
+    (ok new-vault-id)
+  )
+)
