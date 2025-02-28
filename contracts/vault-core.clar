@@ -233,6 +233,51 @@
   )
 )
 
+;; Store encrypted data in vault with quantum-resistant encryption
+(define-public (store-encrypted-data (vault-id uint) (data-hash (buff 32)) (encrypted-metadata (buff 256)))
+  (let (
+    (owner tx-sender)
+    (vault-maybe (map-get? vaults {owner: owner, vault-id: vault-id}))
+  )
+    ;; Check if vault exists
+    (if (is-some vault-maybe)
+      (let (
+        (vault (unwrap-panic vault-maybe))
+        (now (current-time))
+      )
+        ;; Check if user is vault owner
+        (asserts! (is-vault-owner owner vault-id) (err ERR-NOT-AUTHORIZED))
+
+        ;; Check time lock
+        (let ((time-lock-result (check-time-lock owner vault-id)))
+          (asserts! (is-ok time-lock-result) (err ERR-TIME-LOCK))
+        )
+
+        ;; Update encrypted data
+        (map-set vault-encrypted-data
+          {owner: owner, vault-id: vault-id}
+          {
+            data-hash: data-hash,
+            encrypted-metadata: encrypted-metadata,
+            encryption-version: (var-get encryption-version)
+          }
+        )
+
+        ;; Update last accessed time
+        (map-set vaults
+          {owner: owner, vault-id: vault-id}
+          (merge vault {
+            last-accessed: now
+          })
+        )
+
+        (ok true)
+      )
+      (err ERR-VAULT-NOT-FOUND)
+    )
+  )
+)
+
 
 ;; Read-only Functions
 
