@@ -22,3 +22,12 @@
 
 ;; Variables
 (define-data-var total-vaults uint u0)
+
+;; Private Functions
+(define-private (is-vault-owner (owner principal) (vault-id uint))
+  (is-eq tx-sender owner)
+)
+
+(define-private (current-time)
+  (default-to u0 (get-block-info? time (- block-height u1)))
+)
