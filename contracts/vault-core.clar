@@ -63,3 +63,38 @@
     (ok new-vault-id)
   )
 )
+
+;; Deposit STX into vault
+(define-public (deposit (vault-id uint) (amount uint))
+  (let (
+    (owner tx-sender)
+    (vault-maybe (map-get? vaults {owner: owner, vault-id: vault-id}))
+  )
+    ;; Check if vault exists
+    (if (is-some vault-maybe)
+      (let (
+        (vault (unwrap-panic vault-maybe))
+        (current-balance (get balance vault))
+        (new-balance (+ current-balance amount))
+        (now (current-time))
+      )
+        ;; Transfer STX to contract
+        (let ((transfer-result (stx-transfer? amount owner (as-contract tx-sender))))
+          (asserts! (is-ok transfer-result) (err ERR-INSUFFICIENT-BALANCE))
+        )
+
+        ;; Update vault balance and last accessed time
+        (map-set vaults
+          {owner: owner, vault-id: vault-id}
+          (merge vault {
+            balance: new-balance,
+            last-accessed: now
+          })
+        )
+
+        (ok new-balance)
+      )
+      (err ERR-VAULT-NOT-FOUND)
+    )
+  )
+)
