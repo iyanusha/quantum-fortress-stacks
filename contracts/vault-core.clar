@@ -202,6 +202,37 @@
   )
 )
 
+;; Update vault time lock
+(define-public (update-time-lock (vault-id uint) (new-time-lock uint))
+  (let (
+    (owner tx-sender)
+    (vault-maybe (map-get? vaults {owner: owner, vault-id: vault-id}))
+  )
+    ;; Check if vault exists
+    (if (is-some vault-maybe)
+      (let (
+        (vault (unwrap-panic vault-maybe))
+        (now (current-time))
+      )
+        ;; Check if user is vault owner
+        (asserts! (is-vault-owner owner vault-id) (err ERR-NOT-AUTHORIZED))
+
+        ;; Update vault time lock and last accessed time
+        (map-set vaults
+          {owner: owner, vault-id: vault-id}
+          (merge vault {
+            time-lock: (+ now new-time-lock),
+            last-accessed: now
+          })
+        )
+
+        (ok true)
+      )
+      (err ERR-VAULT-NOT-FOUND)
+    )
+  )
+)
+
 
 ;; Read-only Functions
 
