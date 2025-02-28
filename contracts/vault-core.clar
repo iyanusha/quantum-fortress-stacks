@@ -41,6 +41,10 @@
 (define-data-var total-vaults uint u0)
 
 ;; Private Functions
+(define-private (is-contract-owner)
+  (is-eq tx-sender CONTRACT-OWNER)
+)
+
 (define-private (is-vault-owner (owner principal) (vault-id uint))
   (is-eq tx-sender owner)
 )
@@ -48,6 +52,27 @@
 (define-private (current-time)
   (default-to u0 (get-block-info? time (- block-height u1)))
 )
+
+(define-private (check-time-lock (owner principal) (vault-id uint))
+  (let (
+    (vault-maybe (map-get? vaults {owner: owner, vault-id: vault-id}))
+  )
+    (if (is-some vault-maybe)
+      (let (
+        (vault (unwrap-panic vault-maybe))
+        (time-lock (get time-lock vault))
+        (now (current-time))
+      )
+        (if (> now time-lock)
+          (ok true)
+          (err ERR-TIME-LOCK)
+        )
+      )
+      (err ERR-VAULT-NOT-FOUND)
+    )
+  )
+)
+
 
 ;; Public Functions
 
