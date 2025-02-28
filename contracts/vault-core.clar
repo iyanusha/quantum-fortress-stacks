@@ -286,6 +286,37 @@
   (map-get? vaults {owner: owner, vault-id: vault-id})
 )
 
+;; Get encrypted data hash (but not the encrypted data itself for security)
+(define-read-only (get-data-hash (owner principal) (vault-id uint))
+  (let ((data (map-get? vault-encrypted-data {owner: owner, vault-id: vault-id})))
+    (if (is-some data)
+      (ok (get data-hash (unwrap-panic data)))
+      (err ERR-VAULT-NOT-FOUND)
+    )
+  )
+)
+
+;; Check if vault is currently locked by time-lock
+(define-read-only (is-vault-locked (owner principal) (vault-id uint))
+  (let ((vault-data (map-get? vaults {owner: owner, vault-id: vault-id})))
+    (if (is-some vault-data)
+      (let (
+        (vault (unwrap-panic vault-data))
+        (time-lock (get time-lock vault))
+        (now (current-time))
+      )
+        (ok (< now time-lock))
+      )
+      (err ERR-VAULT-NOT-FOUND)
+    )
+  )
+)
+
+;; Get current encryption version
+(define-read-only (get-encryption-version)
+  (ok (var-get encryption-version))
+)
+
 ;; Get total number of vaults
 (define-read-only (get-total-vaults)
   (ok (var-get total-vaults))
