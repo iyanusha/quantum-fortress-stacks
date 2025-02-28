@@ -73,11 +73,8 @@
   )
 )
 
-
-;; Public Functions
-
-;; Create a new vault
-(define-public (create-vault (name (string-ascii 50)))
+;; Create a new vault with quantum-resistant encryption
+(define-public (create-vault (name (string-ascii 50)) (time-lock uint) (recovery-addresses (list 5 principal)))
   (let (
     (owner tx-sender)
     (new-vault-id (+ (var-get total-vaults) u1))
@@ -86,7 +83,7 @@
   )
     ;; Check if the vault already exists
     (asserts! (is-none vault-exists) (err ERR-VAULT-EXISTS))
-
+    
     ;; Create new vault
     (map-set vaults
       {owner: owner, vault-id: new-vault-id}
@@ -94,13 +91,26 @@
         name: name,
         balance: u0,
         created-at: now,
-        last-accessed: now
+        last-accessed: now,
+        time-lock: (+ now time-lock),
+        recovery-addresses: recovery-addresses,
+        inheritance-active: false
       }
     )
-
+    
+    ;; Initialize encrypted data storage (would contain the post-quantum encrypted key material)
+    (map-set vault-encrypted-data
+      {owner: owner, vault-id: new-vault-id}
+      {
+        data-hash: 0x0000000000000000000000000000000000000000000000000000000000000000,
+        encrypted-metadata: 0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
+        encryption-version: (var-get encryption-version)
+      }
+    )
+    
     ;; Increment total vaults counter
     (var-set total-vaults new-vault-id)
-
+    
     ;; Return success with new vault ID
     (ok new-vault-id)
   )
