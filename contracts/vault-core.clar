@@ -156,7 +156,6 @@
   )
 )
 
-
 ;; Withdraw STX from vault
 (define-public (withdraw (vault-id uint) (amount uint))
   (let (
@@ -173,15 +172,20 @@
       )
         ;; Check if user is vault owner
         (asserts! (is-vault-owner owner vault-id) (err ERR-NOT-AUTHORIZED))
-
+        
+        ;; Check time lock
+        (let ((time-lock-result (check-time-lock owner vault-id)))
+          (asserts! (is-ok time-lock-result) (err ERR-TIME-LOCK))
+        )
+        
         ;; Check if vault has sufficient balance
         (asserts! (>= current-balance amount) (err ERR-INSUFFICIENT-BALANCE))
-
+        
         ;; Transfer STX from contract to user
         (let ((transfer-result (as-contract (stx-transfer? amount tx-sender owner))))
           (asserts! (is-ok transfer-result) (err ERR-INSUFFICIENT-BALANCE))
         )
-
+        
         ;; Update vault balance and last accessed time
         (map-set vaults
           {owner: owner, vault-id: vault-id}
@@ -190,13 +194,14 @@
             last-accessed: now
           })
         )
-
+        
         (ok new-balance)
       )
       (err ERR-VAULT-NOT-FOUND)
     )
   )
 )
+
 
 ;; Read-only Functions
 
