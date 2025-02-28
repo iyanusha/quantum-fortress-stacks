@@ -130,6 +130,11 @@
         (new-balance (+ current-balance amount))
         (now (current-time))
       )
+        ;; Check time lock
+        (let ((time-lock-result (check-time-lock owner vault-id)))
+          (asserts! (is-ok time-lock-result) (err ERR-TIME-LOCK))
+        )
+
         ;; Transfer STX to contract
         (let ((transfer-result (stx-transfer? amount owner (as-contract tx-sender))))
           (asserts! (is-ok transfer-result) (err ERR-INSUFFICIENT-BALANCE))
@@ -150,6 +155,7 @@
     )
   )
 )
+
 
 ;; Withdraw STX from vault
 (define-public (withdraw (vault-id uint) (amount uint))
